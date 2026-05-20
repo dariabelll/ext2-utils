@@ -28,6 +28,64 @@ static const char *inode_type_to_string(uint16_t type_and_permissions) {
     }
 }
 
+static int print_indirect_block(
+    const struct ext2_reader *reader,
+    uint32_t block_number,
+    uint32_t level,
+    uint32_t depth
+) {
+    if (block_number == 0) {
+        return 0;
+    }
+
+    uint8_t *block_data = malloc(reader->block_size);
+
+    if (block_data == NULL) {
+        fprintf(stderr, "malloc failed\n");
+        return -1;
+    }
+
+    if (ext2_reader_read_block(reader, block_number, block_data) < 0) {
+        fprintf(stderr, "block read failed\n");
+        free(block_data);
+        return -1;
+    }
+
+    uint32_t pointers_count = reader->block_size / 4;
+
+    for (uint32_t i = 0; i < pointers_count; ++i) {
+        uint32_t child_block = read_little_endian_32(
+            block_data,
+            i * 4
+        );
+
+        if (child_block == 0) {
+            continue;
+        }
+
+        for (uint32_t i = 0; i < depth; ++i) printf("  ");
+
+        if (level == 1) {
+            printf("data block: %u\n", child_block);
+        } else {
+            printf("indirect block: %u\n", child_block);
+
+            if (print_indirect_block(
+                reader,
+                child_block,
+                level - 1,
+                depth + 1
+            ) < 0) {
+                free(block_data);
+                return -1;
+            }
+        }
+    }
+
+    free(block_data);
+    return 0;
+}
+
 int main(int argc, char **argv) {
     if (argc != 3) {
         fprintf(stderr, "invalid args\n");
@@ -95,6 +153,33 @@ int main(int argc, char **argv) {
     printf("singly indirect block pointer: %u\n", inode.singly_indirect_pointer);
     printf("doubly indirect block pointer: %u\n", inode.doubly_indirect_pointer);
     printf("triply indirect block pointer: %u\n", inode.triply_indirect_pointer);
+
+    if (inode.singly_indirect_pointer != 0) {
+        printf("singly indirect data blocks:\n");
+
+        if (print_indirect_block(&reader, inode.singly_indirect_pointer, 1, 1) < 0) {
+            ext2_reader_close(&reader);
+            return 1;
+        }
+    }
+
+    if (inode.doubly_indirect_pointer != 0) {
+        printf("doubly indirect data blocks:\n");
+
+        if (print_indirect_block(&reader, inode.doubly_indirect_pointer, 2, 1) < 0) {
+            ext2_reader_close(&reader);
+            return 1;
+        }
+    }
+
+    if (inode.triply_indirect_pointer != 0) {
+        printf("triply indirect data blocks:\n");
+
+        if (print_indirect_block(&reader, inode.triply_indirect_pointer, 3, 1) < 0) {
+            ext2_reader_close(&reader);
+            return 1;
+        }
+    }
 
     ext2_reader_close(&reader);
     return 0;
