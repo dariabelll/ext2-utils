@@ -9,7 +9,7 @@
 #define INITIAL_BUFFER_SIZE 4096
 
 int main(void) {
-    
+
     uint32_t capacity = INITIAL_BUFFER_SIZE;
     uint32_t size = 0;
 
@@ -71,7 +71,7 @@ int main(void) {
         uint16_t entry_size = read_little_endian_16(data, offset + 4);
         uint8_t name_length = data[offset + 6];
 
-        if (entry_size == 0 || offset + entry_size > size) {
+        if (entry_size < 8 || entry_size % 4 != 0 || offset + entry_size > size) {
             fprintf(stderr, "invalid directory entry size\n");
             free(data);
             return 1;

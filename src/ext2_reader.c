@@ -138,6 +138,13 @@ int ext2_reader_open(struct ext2_reader *reader, const char *path) {
         return -1;
     }
 
+    if (reader->superblock.shifted_block_size > 16) {
+        fprintf(stderr, "invalid block size\n");
+        close(reader->fd);
+        reader->fd = -1;
+        return -1;
+    }
+
     reader->block_size = BASE_BLOCK_SIZE << reader->superblock.shifted_block_size;
 
     if (reader->superblock.major_portion_ver == 0) {
@@ -147,6 +154,13 @@ int ext2_reader_open(struct ext2_reader *reader, const char *path) {
             superblock_data,
             SUPERBLOCK_INODE_SIZE_OFFSET
         );
+    }
+
+    if (reader->inode_size < OLD_INODE_SIZE) {
+        fprintf(stderr, "invalid inode size\n");
+        close(reader->fd);
+        reader->fd = -1;
+        return -1;
     }
 
     if (reader->superblock.group_blocks == 0) {
