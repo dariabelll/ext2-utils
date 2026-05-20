@@ -355,3 +355,23 @@ int ext2_reader_read_inode(
 
     return 0;
 }
+
+int ext2_reader_read_block(
+    const struct ext2_reader *reader,
+    uint32_t block_number,
+    void *buffer
+) {
+    if (block_number == 0 || block_number >= reader->superblock.total_blocks) {
+        fprintf(stderr, "invalid block number\n");
+        return -1;
+    }
+
+    uint64_t block_offset = (uint64_t)block_number * reader->block_size;
+
+    return read_bytes_at(
+        reader->fd,
+        buffer,
+        reader->block_size,
+        block_offset
+    );
+}
