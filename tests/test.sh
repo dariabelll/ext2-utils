@@ -11,8 +11,6 @@ if [ -e "$IMG" ]; then
     exit 1
 fi
 
-make
-
 mkdir -p "$MNT"
 mkdir -p "$OUT"
 

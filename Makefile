@@ -10,6 +10,9 @@ BUILD_DIR = build
 
 all: inode_info get_inode_data dir_dump
 
+test: all
+	./tests/test.sh
+
 inode_info: $(BUILD_DIR)/inode_info.o $(BUILD_DIR)/ext2_reader.o
 	$(CC) $(CFLAGS) -o $@ $^
 

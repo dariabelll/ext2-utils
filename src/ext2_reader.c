@@ -170,6 +170,13 @@ int ext2_reader_open(struct ext2_reader *reader, const char *path) {
         return -1;
     }
 
+    if (reader->superblock.group_inodes == 0) {
+        fprintf(stderr, "invalid inodes per group\n");
+        close(reader->fd);
+        reader->fd = -1;
+        return -1;
+    }
+
     reader->block_groups = (reader->superblock.total_blocks 
         + reader->superblock.group_blocks - 1) / reader->superblock.group_blocks;
 
