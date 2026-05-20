@@ -6,7 +6,7 @@ CPPFLAGS = -Iinclude
 SRC_DIR = src
 BUILD_DIR = build
 
-.PHONY: all clean valgrind
+.PHONY: all clean valgrind test
 
 all: inode_info get_inode_data dir_dump
 
