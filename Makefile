@@ -8,18 +8,24 @@ BUILD_DIR = build
 
 .PHONY: all clean valgrind
 
-all: inode_info get_inode_data
+all: inode_info get_inode_data dir_dump
 
-inode_info: $(BUILD_DIR)/inodeinfo.o $(BUILD_DIR)/ext2_reader.o
+inode_info: $(BUILD_DIR)/inode_info.o $(BUILD_DIR)/ext2_reader.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 get_inode_data: $(BUILD_DIR)/get_inode_data.o $(BUILD_DIR)/ext2_reader.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(BUILD_DIR)/inodeinfo.o: $(SRC_DIR)/inodeinfo.c include/ext2_reader.h | $(BUILD_DIR)
+dir_dump: $(BUILD_DIR)/dir_dump.o $(BUILD_DIR)/ext2_reader.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BUILD_DIR)/inode_info.o: $(SRC_DIR)/inode_info.c include/ext2_reader.h | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/get_inode_data.o: $(SRC_DIR)/get_inode_data.c include/ext2_reader.h | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/dir_dump.o: $(SRC_DIR)/dir_dump.c include/ext2_reader.h | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/ext2_reader.o: $(SRC_DIR)/ext2_reader.c include/ext2_reader.h | $(BUILD_DIR)
@@ -30,6 +36,8 @@ $(BUILD_DIR):
 
 valgrind: all
 	valgrind --leak-check=full --track-origins=yes ./inode_info ext2.img 2
+	valgrind --leak-check=full --track-origins=yes ./get_inode_data ext2.img 2 > /dev/null
+	./get_inode_data ext2.img 2 | valgrind --leak-check=full --track-origins=yes ./dir_dump
 
 clean:
-	rm -rf $(BUILD_DIR) inode_info get_inode_data
+	rm -rf $(BUILD_DIR) inode_info get_inode_data dir_dump
